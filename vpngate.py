@@ -320,10 +320,13 @@ def check_one(node, session):
     out["residential"] = "unknown"
     try:
         r = session.get(url, timeout=CHECK_TIMEOUT, headers={"User-Agent": "Mozilla/5.0 (gate-checker)"})
-        if r.status_code != 200:
-            out["error"] = f"HTTP {r.status_code}"
-            out["worker_error"] = True
-            return out
+        
+if r.status_code != 200:
+    out["error"] = f"HTTP {r.status_code}"
+    out["worker_error"] = True
+    print(f"[Worker HTTP错误] 状态码={r.status_code}, 响应={r.text[:300]!r}")
+    return out
+
         j = r.json()
         ok = bool(j.get("success"))
         out["success"] = ok
@@ -351,10 +354,13 @@ def check_one(node, session):
         else:
             out["residential"] = classify_network(out["host"], None, None)
         return out
-    except Exception as exc:
-        out["error"] = f"{type(exc).__name__}: {exc}"
-        out["worker_error"] = True
-        return out
+    
+except Exception as exc:
+    out["error"] = f"{type(exc).__name__}: {exc}"
+    out["worker_error"] = True
+    print(f"[Worker请求异常] {type(exc).__name__}: {exc}")
+    return out
+
 
 
 def check_all(nodes, session):
