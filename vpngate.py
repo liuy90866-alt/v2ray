@@ -377,14 +377,6 @@ def check_one(node, session):
         print(f"[Worker请求异常] {type(exc).__name__}: {exc}")
         return out
 
-    
-except Exception as exc:
-    out["error"] = f"{type(exc).__name__}: {exc}"
-    out["worker_error"] = True
-    print(f"[Worker请求异常] {type(exc).__name__}: {exc}")
-    return out
-
-
 
 def check_all(nodes, session):
     """32 并发 (与网页端一致)。单节点失败不影响整体; 但区分'节点不可用'与'Worker 异常'。"""
