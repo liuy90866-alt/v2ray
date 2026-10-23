@@ -318,14 +318,22 @@ def check_one(node, session):
     out["checked_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     out["exit"] = None
     out["residential"] = "unknown"
+    
     try:
-        r = session.get(url, timeout=CHECK_TIMEOUT, headers={"User-Agent": "Mozilla/5.0 (gate-checker)"})
-        
-if r.status_code != 200:
-    out["error"] = f"HTTP {r.status_code}"
-    out["worker_error"] = True
-    print(f"[Worker HTTP错误] 状态码={r.status_code}, 响应={r.text[:300]!r}")
-    return out
+        r = session.get(
+            url,
+            timeout=CHECK_TIMEOUT,
+            headers={"User-Agent": "Mozilla/5.0 (gate-checker)"}
+        )
+
+        if r.status_code != 200:
+            out["error"] = f"HTTP {r.status_code}"
+            out["worker_error"] = True
+            print(
+                f"[Worker HTTP错误] 状态码={r.status_code}, "
+                f"响应={r.text[:300]!r}"
+            )
+            return out
 
         j = r.json()
         ok = bool(j.get("success"))
@@ -333,8 +341,11 @@ if r.status_code != 200:
         out["status"] = "success" if ok else "failed"
         out["latency_ms"] = j.get("responseTime")
         out["colo"] = j.get("colo")
-        out["error"] = (None if ok else (j.get("error") or j.get("message") or "check failed"))
-        # SSTP 版 Worker: 顶层直接返回 exit, 含真实 is_datacenter 标志 + 嵌套 asn 对象
+        out["error"] = (
+            None if ok else
+            (j.get("error") or j.get("message") or "check failed")
+        )
+
         exit_info = j.get("exit") or {}
         if exit_info:
             asn = exit_info.get("asn") or {}
@@ -350,10 +361,22 @@ if r.status_code != 200:
                 "type": asn.get("type"),
                 "is_datacenter": exit_info.get("is_datacenter"),
             }
-            out["residential"] = classify_network(out["host"], org, exit_info.get("is_datacenter"))
+            out["residential"] = classify_network(
+                out["host"], org, exit_info.get("is_datacenter")
+            )
         else:
-            out["residential"] = classify_network(out["host"], None, None)
+            out["residential"] = classify_network(
+                out["host"], None, None
+            )
+
         return out
+
+    except Exception as exc:
+        out["error"] = f"{type(exc).__name__}: {exc}"
+        out["worker_error"] = True
+        print(f"[Worker请求异常] {type(exc).__name__}: {exc}")
+        return out
+
     
 except Exception as exc:
     out["error"] = f"{type(exc).__name__}: {exc}"
